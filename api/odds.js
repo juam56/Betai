@@ -1,13 +1,12 @@
-
-       const SPORT_KEYS = [
-  "basketball_nba",
-  "baseball_mlb",
-  "americanfootball_nfl",
-  "soccer_usa_mls",
-  "soccer_epl",
-  "soccer_spain_la_liga",
-  "soccer_italy_serie_a",
-  "soccer_germany_bundesliga"
+const SPORT_CONFIG = [
+  { key: "basketball_nba", label: "NBA", regions: "us" },
+  { key: "baseball_mlb", label: "MLB", regions: "us" },
+  { key: "americanfootball_nfl", label: "NFL", regions: "us" },
+  { key: "soccer_usa_mls", label: "SOCCER", regions: "us,uk,eu" },
+  { key: "soccer_epl", label: "SOCCER", regions: "uk,eu,us" },
+  { key: "soccer_spain_la_liga", label: "SOCCER", regions: "uk,eu,us" },
+  { key: "soccer_italy_serie_a", label: "SOCCER", regions: "uk,eu,us" },
+  { key: "soccer_germany_bundesliga", label: "SOCCER", regions: "uk,eu,us" }
 ];
 
 function americanToProbability(price) {
@@ -17,6 +16,8 @@ function americanToProbability(price) {
 }
 
 function chooseBookmaker(bookmakers = []) {
+  if (!Array.isArray(bookmakers) || bookmakers.length === 0) return null;
+
   const preferred = bookmakers.find((b) => {
     const text = `${b.title || ""} ${b.key || ""}`.toLowerCase();
     return (
@@ -43,12 +44,50 @@ function normalizeMarket(market) {
   };
 }
 
-function sportLabelFromKey(sportKey) {
-  if (sportKey.includes("americanfootball_nfl")) return "NFL";
-  if (sportKey.includes("basketball_nba")) return "NBA";
-  if (sportKey.includes("baseball_mlb")) return "MLB";
-  if (sportKey.includes("soccer")) return "SOCCER";
-  return "OTRO";
+async function loadSport(config, apiKey) {
+  try {
+    const url =
+      `https://api.the-odds-api.com/v4/sports/${config.key}/odds/` +
+      `?apiKey=${apiKey}` +
+      `&regions=${config.regions}` +
+      `&markets=h2h,spreads,totals` +
+      `&oddsFormat=american` +
+      `&dateFormat=iso`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.map((event) => {
+      const bookmaker = chooseBookmaker(event.bookmakers || []);
+      const markets = bookmaker?.markets || [];
+
+      return {
+        id: `${config.key}_${event.id}`,
+        sport: config.label,
+        league: event.sport_title || config.key,
+        commence_time: event.commence_time,
+        home_team: event.home_team,
+        away_team: event.away_team,
+        bookmaker: bookmaker ? bookmaker.title : "Sin bookmaker disponible",
+        markets: {
+          h2h: normalizeMarket(markets.find((m) => m.key === "h2h")),
+          spreads: normalizeMarket(markets.find((m) => m.key === "spreads")),
+          totals: normalizeMarket(markets.find((m) => m.key === "totals")),
+        },
+      };
+    });
+  } catch (error) {
+    return [];
+  }
 }
 
 module.exports = async (req, res) => {
@@ -61,57 +100,29 @@ module.exports = async (req, res) => {
       });
     }
 
-    const allResponses = await Promise.all(
-      SPORT_KEYS.map(async (sportKey) => {
-        const url =
-          `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/` +
-     `?apiKey=${apiKey}&regions=us,uk,eu&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`;=iso`;
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          return [];
-        }
-
-        const data = await response.json();
-
-        return (data || []).map((event) => {
-          const bookmaker = chooseBookmaker(event.bookmakers || []);
-          const markets = bookmaker?.markets || [];
-
-          return {
-            id: `${sportKey}_${event.id}`,
-            sport: sportLabelFromKey(sportKey),
-            league: event.sport_title || sportKey,
-            commence_time: event.commence_time,
-            home_team: event.home_team,
-            away_team: event.away_team,
-            bookmaker: bookmaker ? bookmaker.title : "Sin bookmaker disponible",
-            markets: {
-              h2h: normalizeMarket(markets.find((m) => m.key === "h2h")),
-              spreads: normalizeMarket(markets.find((m) => m.key === "spreads")),
-              totals: normalizeMarket(markets.find((m) => m.key === "totals")),
-            },
-          };
-        });
-      })
+    const results = await Promise.all(
+      SPORT_CONFIG.map((config) => loadSport(config, apiKey))
     );
 
     const now = new Date();
     const maxDate = new Date();
-    maxDate.setDate(now.getDate() + 3);
+    maxDate.setDate(maxDate.getDate() + 3);
+    maxDate.setHours(23, 59, 59, 999);
 
-    const events = allResponses
+    const events = results
       .flat()
       .filter((event) => {
-        const eventDate = new Date(event.commence_time);
-        return eventDate >= now && eventDate <= maxDate;
+        const date = new Date(event.commence_time);
+        return !isNaN(date.getTime()) && date >= now && date <= maxDate;
       })
       .sort((a, b) => new Date(a.commence_time) - new Date(b.commence_time));
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
 
-    return res.status(200).json({ events });
+    return res.status(200).json({
+      events,
+      total: events.length,
+    });
   } catch (error) {
     return res.status(500).json({
       error: "No se pudieron cargar los datos reales",
