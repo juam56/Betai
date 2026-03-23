@@ -1,5 +1,32 @@
 import React from "react";
 
+const games = [
+  {
+    sport: "NFL",
+    match: "Chiefs vs Bills",
+    pick: "Chiefs gana",
+    confidence: "68%",
+  },
+  {
+    sport: "NBA",
+    match: "Lakers vs Celtics",
+    pick: "Más de 219.5 puntos",
+    confidence: "72%",
+  },
+  {
+    sport: "SOCCER",
+    match: "Inter Miami vs Orlando City",
+    pick: "Ambos anotan",
+    confidence: "64%",
+  },
+  {
+    sport: "MLB",
+    match: "Yankees vs Red Sox",
+    pick: "Yankees gana",
+    confidence: "61%",
+  },
+];
+
 export default function App() {
   return (
     <div
@@ -30,8 +57,8 @@ export default function App() {
         >
           <h2 style={{ marginTop: 0 }}>🚀 Estado del proyecto</h2>
           <p>
-            Betai ya está en línea. El siguiente paso es agregar paneles,
-            deportes, estadísticas y predicciones visuales.
+            Betai ya está en línea. Ahora ya puede mostrar partidos de ejemplo
+            y picks visuales por deporte.
           </p>
         </section>
 
@@ -70,30 +97,58 @@ export default function App() {
             border: "1px solid #1f2937",
             borderRadius: "16px",
             padding: "24px",
+            marginBottom: "24px",
           }}
         >
-          <h2 style={{ marginTop: 0 }}>📊 Próximamente</h2>
-          <ul style={{ lineHeight: "1.8" }}>
-            <li>Predicciones por deporte</li>
-            <li>Estadísticas históricas</li>
-            <li>Panel visual de partidos</li>
-            <li>Mejores picks informativos</li>
-          </ul>
-
-          <button
+          <h2 style={{ marginTop: 0 }}>📊 Partidos de ejemplo</h2>
+          <div
             style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "16px",
               marginTop: "16px",
-              background: "#2563eb",
-              color: "white",
-              border: "none",
-              padding: "12px 20px",
-              borderRadius: "10px",
-              fontSize: "16px",
-              cursor: "pointer",
             }}
           >
-            Ver panel próximamente
-          </button>
+            {games.map((game, index) => (
+              <div
+                key={index}
+                style={{
+                  background: "#1f2937",
+                  border: "1px solid #374151",
+                  borderRadius: "14px",
+                  padding: "18px",
+                }}
+              >
+                <div style={{ fontSize: "14px", opacity: 0.7, marginBottom: "8px" }}>
+                  {game.sport}
+                </div>
+                <div style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px" }}>
+                  {game.match}
+                </div>
+                <div style={{ marginBottom: "8px" }}>🎯 Pick: {game.pick}</div>
+                <div style={{ color: "#60a5fa", fontWeight: "bold" }}>
+                  Confianza: {game.confidence}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            background: "#111827",
+            border: "1px solid #1f2937",
+            borderRadius: "16px",
+            padding: "24px",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>🔜 Próximamente</h2>
+          <ul style={{ lineHeight: "1.8" }}>
+            <li>Estadísticas históricas</li>
+            <li>Predicciones automáticas</li>
+            <li>Panel visual por deporte</li>
+            <li>Sección de mejores picks</li>
+          </ul>
         </section>
       </div>
     </div>
