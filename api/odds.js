@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
       SPORT_KEYS.map(async (sportKey) => {
         const url =
           `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/` +
-          `?apiKey=${apiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`;
+          `?apiKey=${apiKey}&regions=us,uk,eu&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`;
 
         const response = await fetch(url);
 
