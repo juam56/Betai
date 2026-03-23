@@ -140,4 +140,4 @@ module.exports = async (req, res) => {
       detail: error.message,
     });
   }
-};};
+};
