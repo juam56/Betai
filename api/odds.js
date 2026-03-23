@@ -1,3 +1,15 @@
+
+       const SPORT_KEYS = [
+  "basketball_nba",
+  "baseball_mlb",
+  "americanfootball_nfl",
+  "soccer_usa_mls",
+  "soccer_epl",
+  "soccer_spain_la_liga",
+  "soccer_italy_serie_a",
+  "soccer_germany_bundesliga"
+];
+
 function americanToProbability(price) {
   if (typeof price !== "number") return null;
   if (price > 0) return 100 / (price + 100);
@@ -31,15 +43,12 @@ function normalizeMarket(market) {
   };
 }
 
-function mapSportName(sportKey = "", sportTitle = "") {
-  const text = `${sportKey} ${sportTitle}`.toLowerCase();
-
-  if (text.includes("nfl") || text.includes("americanfootball")) return "NFL";
-  if (text.includes("nba") || text.includes("basketball")) return "NBA";
-  if (text.includes("mlb") || text.includes("baseball")) return "MLB";
-  if (text.includes("soccer")) return "SOCCER";
-
-  return sportTitle || sportKey || "OTRO";
+function sportLabelFromKey(sportKey) {
+  if (sportKey.includes("americanfootball_nfl")) return "NFL";
+  if (sportKey.includes("basketball_nba")) return "NBA";
+  if (sportKey.includes("baseball_mlb")) return "MLB";
+  if (sportKey.includes("soccer")) return "SOCCER";
+  return "OTRO";
 }
 
 module.exports = async (req, res) => {
@@ -52,53 +61,52 @@ module.exports = async (req, res) => {
       });
     }
 
-    const url =
-      `https://api.the-odds-api.com/v4/sports/upcoming/odds/` +
-      `?apiKey=${apiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`;
+    const allResponses = await Promise.all(
+      SPORT_KEYS.map(async (sportKey) => {
+        const url =
+          `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/` +
+          `?apiKey=${apiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso`;
 
-    const response = await fetch(url);
+        const response = await fetch(url);
 
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(500).json({
-        error: "La API externa no respondió bien",
-        detail: text,
-      });
-    }
+        if (!response.ok) {
+          return [];
+        }
 
-    const data = await response.json();
+        const data = await response.json();
 
-    const allowedSports = ["NFL", "NBA", "MLB", "SOCCER"];
+        return (data || []).map((event) => {
+          const bookmaker = chooseBookmaker(event.bookmakers || []);
+          const markets = bookmaker?.markets || [];
 
-    const events = (data || [])
-      .map((event) => {
-        const sport = mapSportName(event.sport_key, event.sport_title);
-
-        if (!allowedSports.includes(sport)) return null;
-
-        const bookmaker = chooseBookmaker(event.bookmakers || []);
-        const markets = bookmaker?.markets || [];
-
-        const h2h = normalizeMarket(markets.find((m) => m.key === "h2h"));
-        const spreads = normalizeMarket(markets.find((m) => m.key === "spreads"));
-        const totals = normalizeMarket(markets.find((m) => m.key === "totals"));
-
-        return {
-          id: event.id,
-          sport,
-          league: event.sport_title || event.sport_key,
-          commence_time: event.commence_time,
-          home_team: event.home_team,
-          away_team: event.away_team,
-          bookmaker: bookmaker ? bookmaker.title : "Sin bookmaker disponible",
-          markets: {
-            h2h,
-            spreads,
-            totals,
-          },
-        };
+          return {
+            id: `${sportKey}_${event.id}`,
+            sport: sportLabelFromKey(sportKey),
+            league: event.sport_title || sportKey,
+            commence_time: event.commence_time,
+            home_team: event.home_team,
+            away_team: event.away_team,
+            bookmaker: bookmaker ? bookmaker.title : "Sin bookmaker disponible",
+            markets: {
+              h2h: normalizeMarket(markets.find((m) => m.key === "h2h")),
+              spreads: normalizeMarket(markets.find((m) => m.key === "spreads")),
+              totals: normalizeMarket(markets.find((m) => m.key === "totals")),
+            },
+          };
+        });
       })
-      .filter(Boolean)
+    );
+
+    const now = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(now.getDate() + 3);
+
+    const events = allResponses
+      .flat()
+      .filter((event) => {
+        const eventDate = new Date(event.commence_time);
+        return eventDate >= now && eventDate <= maxDate;
+      })
       .sort((a, b) => new Date(a.commence_time) - new Date(b.commence_time));
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
