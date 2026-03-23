@@ -1,34 +1,101 @@
-import React from 'react';
+import React from "react";
 
-const App = () => {
+export default function App() {
   return (
     <div
       style={{
-        fontFamily: 'Arial, sans-serif',
-        color: '#fff',
-        backgroundColor: '#04080f',
-        minHeight: '100vh',
-        padding: '20px'
+        minHeight: "100vh",
+        background: "linear-gradient(180deg, #04080f 0%, #0b1220 100%)",
+        color: "white",
+        fontFamily: "Arial, sans-serif",
+        padding: "30px",
       }}
     >
-      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ margin: 0 }}>betai</h1>
-        <p style={{ marginTop: 4, opacity: 0.8 }}>
-          MVP de predicción de resultados deportivos
-        </p>
-      </header>
+      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+        <header style={{ textAlign: "center", marginBottom: "40px" }}>
+          <h1 style={{ fontSize: "48px", marginBottom: "10px" }}>Betai</h1>
+          <p style={{ fontSize: "18px", opacity: 0.85 }}>
+            Plataforma MVP de análisis deportivo
+          </p>
+        </header>
 
-      <main style={{ maxWidth: 800, margin: '0 auto' }}>
-        <section>
-          <h2>Estado</h2>
+        <section
+          style={{
+            background: "#111827",
+            border: "1px solid #1f2937",
+            borderRadius: "16px",
+            padding: "24px",
+            marginBottom: "24px",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>🚀 Estado del proyecto</h2>
           <p>
-            Bienvenido a Betai. Este es un esqueleto para arrancar el MVP. Sustituye
-            con tus componentes y lógica de negocio.
+            Betai ya está en línea. El siguiente paso es agregar paneles,
+            deportes, estadísticas y predicciones visuales.
           </p>
         </section>
-      </main>
+
+        <section style={{ marginBottom: "24px" }}>
+          <h2>🏆 Deportes incluidos</h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "16px",
+              marginTop: "16px",
+            }}
+          >
+            {["NFL", "NBA", "SOCCER", "MLB"].map((sport) => (
+              <div
+                key={sport}
+                style={{
+                  background: "#1f2937",
+                  padding: "20px",
+                  borderRadius: "14px",
+                  textAlign: "center",
+                  border: "1px solid #374151",
+                  fontWeight: "bold",
+                  fontSize: "20px",
+                }}
+              >
+                {sport}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            background: "#111827",
+            border: "1px solid #1f2937",
+            borderRadius: "16px",
+            padding: "24px",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>📊 Próximamente</h2>
+          <ul style={{ lineHeight: "1.8" }}>
+            <li>Predicciones por deporte</li>
+            <li>Estadísticas históricas</li>
+            <li>Panel visual de partidos</li>
+            <li>Mejores picks informativos</li>
+          </ul>
+
+          <button
+            style={{
+              marginTop: "16px",
+              background: "#2563eb",
+              color: "white",
+              border: "none",
+              padding: "12px 20px",
+              borderRadius: "10px",
+              fontSize: "16px",
+              cursor: "pointer",
+            }}
+          >
+            Ver panel próximamente
+          </button>
+        </section>
+      </div>
     </div>
   );
-};
-
-export default App;
+}
